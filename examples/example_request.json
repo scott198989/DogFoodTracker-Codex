@@ -1,0 +1,58 @@
+{
+  "dog": {
+    "weight_kg": 22.0,
+    "target_weight_kg": 22.0,
+    "age_years": 4.0,
+    "sex": "female",
+    "neutered": true,
+    "activity": "moderate"
+  },
+  "mer_factor_key": "neutered_adult",
+  "kibble": {
+    "name": "Standard Kibble",
+    "kcal_per_100g": 350.0,
+    "nutrients_per_100g": {
+      "protein_g": 24.0,
+      "fat_g": 12.0,
+      "carbs_g": 45.0,
+      "calcium_mg": 1000.0,
+      "phosphorus_mg": 800.0,
+      "iron_mg": 10.0,
+      "zinc_mg": 15.0,
+      "vitamin_a_iu": 1200.0,
+      "vitamin_d_iu": 130.0,
+      "vitamin_e_mg": 15.0
+    }
+  },
+  "kibble_grams": 180.0,
+  "treats_kcal": 60.0,
+  "recipe": {
+    "items": [
+      {
+        "ingredient": {
+          "name": "Chicken",
+          "kcal_per_100g": 165.0,
+          "nutrients_per_100g": {
+            "protein_g": 31.0,
+            "fat_g": 3.6,
+            "carbs_g": 0.0
+          }
+        },
+        "grams": 200.0
+      },
+      {
+        "ingredient": {
+          "name": "Sweet Potato",
+          "kcal_per_100g": 86.0,
+          "nutrients_per_100g": {
+            "protein_g": 1.6,
+            "fat_g": 0.1,
+            "carbs_g": 20.1
+          }
+        },
+        "grams": 150.0
+      }
+    ]
+  },
+  "meals": ["breakfast", "dinner"]
+}
