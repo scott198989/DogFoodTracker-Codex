@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from dog_meal_planner.models import Dog, Ingredient, Nutrients, Recipe, RecipeItem
@@ -15,7 +18,11 @@ from dog_meal_planner.nutrition import (
 from dog_meal_planner.usda import USDAClient, ingredient_from_usda
 
 
+BASE_DIR = Path(__file__).resolve().parents[2]
+FRONTEND_DIR = BASE_DIR / "frontend"
+
 app = FastAPI(title="Dog Meal Planner")
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 
 class NutrientsPayload(BaseModel):
@@ -88,6 +95,11 @@ class ComputePlanPayload(BaseModel):
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/")
+async def frontend() -> FileResponse:
+    return FileResponse(FRONTEND_DIR / "index.html")
 
 
 @app.post("/compute-plan")

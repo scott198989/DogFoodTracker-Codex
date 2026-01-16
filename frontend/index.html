@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dog Meal Planner</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="header">
+        <div>
+          <h1>Dog Meal Planner</h1>
+          <p>Compute meal plans against AAFCO nutrient targets with the backend API.</p>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2>Dog Profile</h2>
+        <div class="grid">
+          <label>
+            Weight (kg)
+            <input type="number" step="0.1" min="0" id="dog-weight" value="12" />
+          </label>
+          <label>
+            Target weight (kg)
+            <input type="number" step="0.1" min="0" id="dog-target-weight" placeholder="Optional" />
+          </label>
+          <label>
+            Age (years)
+            <input type="number" step="0.1" min="0" id="dog-age" value="3" />
+          </label>
+          <label>
+            Sex
+            <select id="dog-sex">
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+            </select>
+          </label>
+          <label>
+            Neutered
+            <select id="dog-neutered">
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </label>
+          <label>
+            Activity
+            <input type="text" id="dog-activity" value="moderate" />
+          </label>
+          <label>
+            MER factor
+            <select id="mer-factor">
+              <option value="neutered_adult">Neutered adult (1.6)</option>
+              <option value="intact_adult">Intact adult (1.8)</option>
+              <option value="weight_loss">Weight loss (1.1)</option>
+              <option value="weight_gain">Weight gain (1.8)</option>
+              <option value="puppy_low">Puppy low (2.0)</option>
+              <option value="puppy_high">Puppy high (3.0)</option>
+            </select>
+          </label>
+          <label>
+            Treat calories (kcal)
+            <input type="number" step="1" min="0" id="treats-kcal" value="50" />
+          </label>
+          <label>
+            Meals (comma-separated)
+            <input type="text" id="meals" value="breakfast,dinner" />
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Kibble</h2>
+        <div class="grid">
+          <label>
+            Name
+            <input type="text" id="kibble-name" value="Premium Kibble" />
+          </label>
+          <label>
+            Kcal per 100g
+            <input type="number" step="0.1" min="0" id="kibble-kcal" value="380" />
+          </label>
+          <label>
+            Grams fed
+            <input type="number" step="1" min="0" id="kibble-grams" value="120" />
+          </label>
+        </div>
+        <details class="details">
+          <summary>Optional kibble nutrients per 100g</summary>
+          <div class="grid nutrients" data-prefix="kibble">
+            <label>Protein (g)<input type="number" step="0.1" min="0" data-field="protein_g" /></label>
+            <label>Fat (g)<input type="number" step="0.1" min="0" data-field="fat_g" /></label>
+            <label>Carbs (g)<input type="number" step="0.1" min="0" data-field="carbs_g" /></label>
+            <label>Calcium (mg)<input type="number" step="0.1" min="0" data-field="calcium_mg" /></label>
+            <label>Phosphorus (mg)<input type="number" step="0.1" min="0" data-field="phosphorus_mg" /></label>
+            <label>Iron (mg)<input type="number" step="0.1" min="0" data-field="iron_mg" /></label>
+            <label>Zinc (mg)<input type="number" step="0.1" min="0" data-field="zinc_mg" /></label>
+            <label>Vitamin A (IU)<input type="number" step="0.1" min="0" data-field="vitamin_a_iu" /></label>
+            <label>Vitamin D (IU)<input type="number" step="0.1" min="0" data-field="vitamin_d_iu" /></label>
+            <label>Vitamin E (mg)<input type="number" step="0.1" min="0" data-field="vitamin_e_mg" /></label>
+          </div>
+        </details>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <h2>Homemade Recipe</h2>
+          <button class="ghost" id="add-item" type="button">Add ingredient</button>
+        </div>
+        <div id="recipe-items" class="stack"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <h2>Plan Results</h2>
+          <button id="compute" type="button">Compute plan</button>
+        </div>
+        <pre id="result" aria-live="polite">Fill the form and click “Compute plan”.</pre>
+      </section>
+    </main>
+
+    <template id="item-template">
+      <article class="recipe-item">
+        <div class="section-header">
+          <h3>Ingredient</h3>
+          <button class="ghost remove" type="button">Remove</button>
+        </div>
+        <div class="grid">
+          <label>
+            Name
+            <input type="text" data-field="name" value="Chicken" />
+          </label>
+          <label>
+            Kcal per 100g
+            <input type="number" step="0.1" min="0" data-field="kcal_per_100g" value="165" />
+          </label>
+          <label>
+            Grams in recipe
+            <input type="number" step="1" min="0" data-field="grams" value="100" />
+          </label>
+        </div>
+        <details class="details">
+          <summary>Optional nutrients per 100g</summary>
+          <div class="grid nutrients" data-prefix="recipe">
+            <label>Protein (g)<input type="number" step="0.1" min="0" data-field="protein_g" /></label>
+            <label>Fat (g)<input type="number" step="0.1" min="0" data-field="fat_g" /></label>
+            <label>Carbs (g)<input type="number" step="0.1" min="0" data-field="carbs_g" /></label>
+            <label>Calcium (mg)<input type="number" step="0.1" min="0" data-field="calcium_mg" /></label>
+            <label>Phosphorus (mg)<input type="number" step="0.1" min="0" data-field="phosphorus_mg" /></label>
+            <label>Iron (mg)<input type="number" step="0.1" min="0" data-field="iron_mg" /></label>
+            <label>Zinc (mg)<input type="number" step="0.1" min="0" data-field="zinc_mg" /></label>
+            <label>Vitamin A (IU)<input type="number" step="0.1" min="0" data-field="vitamin_a_iu" /></label>
+            <label>Vitamin D (IU)<input type="number" step="0.1" min="0" data-field="vitamin_d_iu" /></label>
+            <label>Vitamin E (mg)<input type="number" step="0.1" min="0" data-field="vitamin_e_mg" /></label>
+          </div>
+        </details>
+      </article>
+    </template>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
