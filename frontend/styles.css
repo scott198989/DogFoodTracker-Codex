@@ -1,0 +1,143 @@
+:root {
+  color-scheme: light;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: #f5f7fb;
+  color: #0b1f33;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #314156;
+}
+
+input,
+select,
+button,
+textarea {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d0d7e2;
+  background: #fff;
+}
+
+button {
+  cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  font-weight: 600;
+}
+
+button.ghost {
+  background: transparent;
+  color: #2563eb;
+  border: 1px dashed #c0cee0;
+}
+
+button.ghost:hover {
+  border-style: solid;
+}
+
+.details {
+  border-top: 1px solid #edf1f6;
+  padding-top: 12px;
+}
+
+.details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #1f2f46;
+  margin-bottom: 12px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recipe-item {
+  border: 1px solid #edf1f6;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fbfcff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+pre {
+  background: #0b1f33;
+  color: #dbeafe;
+  padding: 16px;
+  border-radius: 12px;
+  overflow-x: auto;
+  min-height: 120px;
+}
+
+pre.error {
+  background: #3b0d0d;
+  color: #fee2e2;
+}
+
+@media (max-width: 720px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  button {
+    width: 100%;
+  }
+}
