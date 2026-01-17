@@ -3,6 +3,9 @@ const addItemButton = document.getElementById("add-item");
 const computeButton = document.getElementById("compute");
 const recipeItemsContainer = document.getElementById("recipe-items");
 const itemTemplate = document.getElementById("item-template");
+const weightUnitEl = document.getElementById("weight-unit");
+const weightUnitLabelEl = document.getElementById("weight-unit-label");
+const targetWeightUnitLabelEl = document.getElementById("target-weight-unit-label");
 const rerValueEl = document.getElementById("rer-value");
 const merValueEl = document.getElementById("mer-value");
 const merFactorLabelEl = document.getElementById("mer-factor-label");
@@ -18,7 +21,19 @@ const statusRowEl = document.getElementById("status-row");
 const kcalProgressEl = document.getElementById("kcal-progress");
 const savePlanButton = document.getElementById("save-plan");
 const loadPlanButton = document.getElementById("load-plan");
+const deletePlanButton = document.getElementById("delete-plan");
 const resetPlanButton = document.getElementById("reset-plan");
+const planNameInput = document.getElementById("plan-name");
+const planSelect = document.getElementById("plan-select");
+const recipeNameInput = document.getElementById("recipe-name");
+const recipeSelect = document.getElementById("recipe-select");
+const saveRecipeButton = document.getElementById("save-recipe");
+const loadRecipeButton = document.getElementById("load-recipe");
+const deleteRecipeButton = document.getElementById("delete-recipe");
+const usdaApiKeyInput = document.getElementById("usda-api-key");
+const usdaFdcInput = document.getElementById("usda-fdc-id");
+const usdaNameOverrideInput = document.getElementById("usda-name-override");
+const usdaFetchButton = document.getElementById("usda-fetch");
 const macroProteinValueEl = document.getElementById("macro-protein-value");
 const macroFatValueEl = document.getElementById("macro-fat-value");
 const macroCarbValueEl = document.getElementById("macro-carb-value");
@@ -34,6 +49,7 @@ const waterTargetEl = document.getElementById("water-target");
 const hydrationStatusEl = document.getElementById("hydration-status");
 const macroCalorieSplitEl = document.getElementById("macro-calorie-split");
 const proteinPerKgEl = document.getElementById("protein-per-kg");
+const proteinUnitLabelEl = document.getElementById("protein-unit-label");
 const capRatioEl = document.getElementById("cap-ratio");
 const micronutrientSignalEl = document.getElementById("micronutrient-signal");
 const diagnosticStatusEl = document.getElementById("diagnostic-status");
@@ -46,6 +62,12 @@ const merFactorMap = {
   puppy_low: 2.0,
   puppy_high: 3.0,
 };
+
+const KG_PER_LB = 0.45359237;
+const LB_PER_KG = 1 / KG_PER_LB;
+const USDA_API_KEY_STORAGE = "usdaApiKey";
+
+let currentWeightUnit = weightUnitEl?.value || "kg";
 
 const parseNumber = (value) => {
   if (value === "" || value === null || value === undefined) {
@@ -72,6 +94,37 @@ const formatNumber = (value) => {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 1,
   }).format(value);
+};
+
+const toKg = (value, unit) => (unit === "kg" ? value : value * KG_PER_LB);
+
+const convertWeightValue = (value, fromUnit, toUnit) => {
+  if (fromUnit === toUnit) {
+    return value;
+  }
+  return fromUnit === "kg" ? value * LB_PER_KG : value * KG_PER_LB;
+};
+
+const convertWeightInput = (input, fromUnit, toUnit) => {
+  if (!input || input.value === "") {
+    return;
+  }
+  const value = parseNumber(input.value);
+  const converted = convertWeightValue(value, fromUnit, toUnit);
+  input.value = formatNumber(converted);
+};
+
+const updateWeightUnitLabels = (unit) => {
+  const label = unit === "kg" ? "kg" : "lb";
+  if (weightUnitLabelEl) {
+    weightUnitLabelEl.textContent = label;
+  }
+  if (targetWeightUnitLabelEl) {
+    targetWeightUnitLabelEl.textContent = label;
+  }
+  if (proteinUnitLabelEl) {
+    proteinUnitLabelEl.textContent = label;
+  }
 };
 
 const readNutrients = (container) => {
@@ -117,9 +170,22 @@ const listMeals = () =>
     .map((meal) => meal.trim())
     .filter((meal) => meal.length > 0);
 
-const addRecipeItem = () => {
+const createRecipeItem = (item) => {
   const fragment = itemTemplate.content.cloneNode(true);
   const itemEl = fragment.querySelector(".recipe-item");
+
+  if (item) {
+    itemEl.querySelector("input[data-field='name']").value =
+      item.ingredient?.name || "";
+    itemEl.querySelector("input[data-field='kcal_per_100g']").value =
+      item.ingredient?.kcal_per_100g ?? "";
+    itemEl.querySelector("input[data-field='grams']").value = item.grams ?? "";
+    const nutrients = item.ingredient?.nutrients_per_100g || {};
+    itemEl.querySelectorAll(".nutrients input[data-field]").forEach((input) => {
+      input.value = nutrients[input.dataset.field] ?? "";
+    });
+  }
+
   itemEl.querySelector(".remove").addEventListener("click", () => {
     itemEl.remove();
     refreshSummary();
@@ -127,6 +193,11 @@ const addRecipeItem = () => {
   itemEl.querySelectorAll("input").forEach((input) => {
     input.addEventListener("input", () => refreshSummary());
   });
+  return fragment;
+};
+
+const addRecipeItem = (item) => {
+  const fragment = createRecipeItem(item);
   recipeItemsContainer.appendChild(fragment);
 };
 
@@ -134,6 +205,15 @@ const buildPayload = () => {
   const kibbleNutrients = readNutrients(
     document.querySelector(".nutrients[data-prefix='kibble']")
   );
+
+  const weightUnit = weightUnitEl?.value || "kg";
+  const weightValue = parseNumber(document.getElementById("dog-weight").value);
+  const targetWeightValue = parseOptionalNumber(
+    document.getElementById("dog-target-weight").value
+  );
+  const weightKg = toKg(weightValue, weightUnit);
+  const targetWeightKg =
+    targetWeightValue === null ? null : toKg(targetWeightValue, weightUnit);
 
   const kibble = {
     name: document.getElementById("kibble-name").value.trim() || "Kibble",
@@ -145,10 +225,8 @@ const buildPayload = () => {
 
   return {
     dog: {
-      weight_kg: parseNumber(document.getElementById("dog-weight").value),
-      target_weight_kg: parseOptionalNumber(
-        document.getElementById("dog-target-weight").value
-      ),
+      weight_kg: weightKg,
+      target_weight_kg: targetWeightKg,
       age_years: parseNumber(document.getElementById("dog-age").value),
       sex: document.getElementById("dog-sex").value,
       neutered: parseBool(document.getElementById("dog-neutered").value),
@@ -413,10 +491,12 @@ const updateIngredientHighlights = (recipeTotals, kibbleTotals) => {
 };
 
 const refreshSummary = () => {
-  const weight = parseNumber(document.getElementById("dog-weight").value);
+  const weightUnit = weightUnitEl?.value || "kg";
+  const weightValue = parseNumber(document.getElementById("dog-weight").value);
+  const weightKg = toKg(weightValue, weightUnit);
   const merFactorKey = document.getElementById("mer-factor").value;
   const merFactor = merFactorMap[merFactorKey] || 1.6;
-  const rer = calculateRer(weight);
+  const rer = calculateRer(weightKg);
   const merTarget = rer * merFactor;
   const kibbleTotals = calculateKibbleTotals();
   const kibbleKcal = kibbleTotals.kcalTotal;
@@ -446,15 +526,17 @@ const refreshSummary = () => {
   kcalProgressEl.style.width = `${progress}%`;
 
   updateMacroBars(combinedTotals.proteinTotal, combinedTotals.fatTotal, combinedTotals.carbsTotal);
-  updateHydration(weight);
+  updateHydration(weightKg);
   updateMealDistribution(meals.length ? meals : ["breakfast", "dinner"], {
     ...combinedTotals,
     kcalTotal: totalKcal,
   });
   updateIngredientHighlights(recipeTotals, kibbleTotals);
 
-  const proteinPerKg = weight > 0 ? combinedTotals.proteinTotal / weight : 0;
-  proteinPerKgEl.textContent = `${formatNumber(proteinPerKg)} g/kg`;
+  const proteinPerKg = weightKg > 0 ? combinedTotals.proteinTotal / weightKg : 0;
+  const proteinPerUnit = weightValue > 0 ? combinedTotals.proteinTotal / weightValue : 0;
+  const unitLabel = weightUnit === "kg" ? "kg" : "lb";
+  proteinPerKgEl.textContent = `${formatNumber(proteinPerUnit)} g/${unitLabel}`;
 
   const capRatio =
     combinedTotals.phosphorusTotal > 0
@@ -500,6 +582,7 @@ const refreshSummary = () => {
 const collectFormState = () => {
   const state = {
     fields: {
+      "weight-unit": weightUnitEl?.value || "kg",
       "dog-weight": document.getElementById("dog-weight").value,
       "dog-target-weight": document.getElementById("dog-target-weight").value,
       "dog-age": document.getElementById("dog-age").value,
@@ -510,6 +593,8 @@ const collectFormState = () => {
       "treats-kcal": document.getElementById("treats-kcal").value,
       "water-ml": document.getElementById("water-ml").value,
       meals: document.getElementById("meals").value,
+      "plan-name": planNameInput?.value || "",
+      "recipe-name": recipeNameInput?.value || "",
       "kibble-name": document.getElementById("kibble-name").value,
       "kibble-kcal": document.getElementById("kibble-kcal").value,
       "kibble-grams": document.getElementById("kibble-grams").value,
@@ -523,12 +608,32 @@ const collectFormState = () => {
   return state;
 };
 
+const applyRecipeItems = (items) => {
+  recipeItemsContainer.innerHTML = "";
+  (items || []).forEach((item) => {
+    const fragment = createRecipeItem(item);
+    recipeItemsContainer.appendChild(fragment);
+  });
+  if (!items || items.length === 0) {
+    addRecipeItem();
+  }
+};
+
 const applyFormState = (state) => {
   if (!state) {
     return;
   }
 
+  if (state.fields?.["weight-unit"] && weightUnitEl) {
+    weightUnitEl.value = state.fields["weight-unit"];
+    currentWeightUnit = weightUnitEl.value;
+    updateWeightUnitLabels(currentWeightUnit);
+  }
+
   Object.entries(state.fields || {}).forEach(([id, value]) => {
+    if (id === "weight-unit") {
+      return;
+    }
     const input = document.getElementById(id);
     if (input) {
       input.value = value;
@@ -542,46 +647,284 @@ const applyFormState = (state) => {
     });
   }
 
-  recipeItemsContainer.innerHTML = "";
-  (state.recipeItems || []).forEach((item) => {
-    const fragment = itemTemplate.content.cloneNode(true);
-    const itemEl = fragment.querySelector(".recipe-item");
-    itemEl.querySelector("input[data-field='name']").value =
-      item.ingredient?.name || "";
-    itemEl.querySelector("input[data-field='kcal_per_100g']").value =
-      item.ingredient?.kcal_per_100g ?? "";
-    itemEl.querySelector("input[data-field='grams']").value = item.grams ?? "";
-    const nutrients = item.ingredient?.nutrients_per_100g || {};
-    itemEl.querySelectorAll(".nutrients input[data-field]").forEach((input) => {
-      input.value = nutrients[input.dataset.field] ?? "";
-    });
-    itemEl.querySelector(".remove").addEventListener("click", () => {
-      itemEl.remove();
-      refreshSummary();
-    });
-    itemEl.querySelectorAll("input").forEach((input) => {
-      input.addEventListener("input", () => refreshSummary());
-    });
-    recipeItemsContainer.appendChild(fragment);
-  });
+  applyRecipeItems(state.recipeItems || []);
 
   refreshSummary();
 };
 
-const savePlan = () => {
-  const state = collectFormState();
-  localStorage.setItem("dogMealPlannerState", JSON.stringify(state));
-  handleSuccess({ status: "Saved plan to local storage." });
-};
-
-const loadPlan = () => {
-  const stored = localStorage.getItem("dogMealPlannerState");
-  if (!stored) {
-    handleError("No saved plan found in this browser.");
+const refreshPlans = async (selectedId) => {
+  if (!planSelect) {
     return;
   }
-  applyFormState(JSON.parse(stored));
-  handleSuccess({ status: "Loaded saved plan." });
+  try {
+    const response = await fetch("/plans");
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+    const plans = await response.json();
+    const current = selectedId || planSelect.value;
+    planSelect.innerHTML = "";
+    if (!plans.length) {
+      planSelect.innerHTML = "<option value=''>No saved plans</option>";
+      return;
+    }
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a saved plan";
+    planSelect.appendChild(placeholder);
+    plans.forEach((plan) => {
+      const option = document.createElement("option");
+      option.value = plan.id;
+      option.textContent = plan.name;
+      planSelect.appendChild(option);
+    });
+    if (current) {
+      planSelect.value = current;
+    }
+  } catch (error) {
+    planSelect.innerHTML = "<option value=''>Unable to load plans</option>";
+  }
+};
+
+const savePlan = async () => {
+  const name = planNameInput?.value.trim() || "";
+  if (!name) {
+    handleError("Enter a plan name before saving.");
+    return;
+  }
+  const state = collectFormState();
+  resultEl.textContent = "Saving plan...";
+  try {
+    const response = await fetch("/plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, payload: state }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      handleError(`Request failed (${response.status}). ${errorText}`);
+      return;
+    }
+    const data = await response.json();
+    await refreshPlans(String(data.id));
+    if (planSelect) {
+      planSelect.value = String(data.id);
+    }
+    handleSuccess({ status: `Saved plan "${data.name}".` });
+  } catch (error) {
+    handleError(`Request failed. ${error}`);
+  }
+};
+
+const loadPlan = async () => {
+  if (!planSelect || !planSelect.value) {
+    handleError("Select a saved plan to load.");
+    return;
+  }
+  resultEl.textContent = "Loading plan...";
+  try {
+    const response = await fetch(`/plans/${planSelect.value}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      handleError(`Request failed (${response.status}). ${errorText}`);
+      return;
+    }
+    const data = await response.json();
+    applyFormState(data.payload);
+    if (planNameInput) {
+      planNameInput.value = data.name;
+    }
+    handleSuccess({ status: `Loaded plan "${data.name}".` });
+  } catch (error) {
+    handleError(`Request failed. ${error}`);
+  }
+};
+
+const deletePlan = async () => {
+  if (!planSelect || !planSelect.value) {
+    handleError("Select a saved plan to delete.");
+    return;
+  }
+  resultEl.textContent = "Deleting plan...";
+  try {
+    const response = await fetch(`/plans/${planSelect.value}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      handleError(`Request failed (${response.status}). ${errorText}`);
+      return;
+    }
+    await refreshPlans("");
+    handleSuccess({ status: "Deleted saved plan." });
+  } catch (error) {
+    handleError(`Request failed. ${error}`);
+  }
+};
+
+const refreshRecipes = async (selectedId) => {
+  if (!recipeSelect) {
+    return;
+  }
+  try {
+    const response = await fetch("/recipes");
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+    const recipes = await response.json();
+    const current = selectedId || recipeSelect.value;
+    recipeSelect.innerHTML = "";
+    if (!recipes.length) {
+      recipeSelect.innerHTML = "<option value=''>No saved recipes</option>";
+      return;
+    }
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a saved recipe";
+    recipeSelect.appendChild(placeholder);
+    recipes.forEach((recipe) => {
+      const option = document.createElement("option");
+      option.value = recipe.id;
+      option.textContent = recipe.name;
+      recipeSelect.appendChild(option);
+    });
+    if (current) {
+      recipeSelect.value = current;
+    }
+  } catch (error) {
+    recipeSelect.innerHTML = "<option value=''>Unable to load recipes</option>";
+  }
+};
+
+const saveRecipe = async () => {
+  const name = recipeNameInput?.value.trim() || "";
+  if (!name) {
+    handleError("Enter a recipe name before saving.");
+    return;
+  }
+  const payload = {
+    name,
+    items: buildRecipeItems(),
+  };
+  const isUpdate = recipeSelect && recipeSelect.value;
+  const url = isUpdate ? `/recipes/${recipeSelect.value}` : "/recipes";
+  const method = isUpdate ? "PUT" : "POST";
+  resultEl.textContent = "Saving recipe...";
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      handleError(`Request failed (${response.status}). ${errorText}`);
+      return;
+    }
+    const data = await response.json();
+    await refreshRecipes(String(data.id));
+    if (recipeSelect) {
+      recipeSelect.value = String(data.id);
+    }
+    handleSuccess({
+      status: `${isUpdate ? "Updated" : "Saved"} recipe \"${data.name}\".`,
+    });
+  } catch (error) {
+    handleError(`Request failed. ${error}`);
+  }
+};
+
+const loadRecipe = async () => {
+  if (!recipeSelect || !recipeSelect.value) {
+    handleError("Select a saved recipe to load.");
+    return;
+  }
+  resultEl.textContent = "Loading recipe...";
+  try {
+    const response = await fetch(`/recipes/${recipeSelect.value}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      handleError(`Request failed (${response.status}). ${errorText}`);
+      return;
+    }
+    const data = await response.json();
+    if (recipeNameInput) {
+      recipeNameInput.value = data.name;
+    }
+    applyRecipeItems(data.items || []);
+    refreshSummary();
+    handleSuccess({ status: `Loaded recipe \"${data.name}\".` });
+  } catch (error) {
+    handleError(`Request failed. ${error}`);
+  }
+};
+
+const deleteRecipe = async () => {
+  if (!recipeSelect || !recipeSelect.value) {
+    handleError("Select a saved recipe to delete.");
+    return;
+  }
+  resultEl.textContent = "Deleting recipe...";
+  try {
+    const response = await fetch(`/recipes/${recipeSelect.value}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      handleError(`Request failed (${response.status}). ${errorText}`);
+      return;
+    }
+    await refreshRecipes("");
+    handleSuccess({ status: "Deleted saved recipe." });
+  } catch (error) {
+    handleError(`Request failed. ${error}`);
+  }
+};
+
+const fetchUsdaIngredient = async () => {
+  const apiKey = usdaApiKeyInput?.value.trim() || "";
+  const fdcId = Number.parseInt(usdaFdcInput?.value || "", 10);
+  const nameOverride = usdaNameOverrideInput?.value.trim() || null;
+
+  if (!apiKey) {
+    handleError("Enter a USDA API key before fetching.");
+    return;
+  }
+  if (!fdcId || Number.isNaN(fdcId)) {
+    handleError("Enter a valid USDA FDC ID.");
+    return;
+  }
+
+  resultEl.textContent = "Fetching USDA ingredient...";
+  try {
+    const response = await fetch("/ingredient/from-usda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: apiKey,
+        fdc_id: fdcId,
+        name_override: nameOverride,
+      }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      handleError(`Request failed (${response.status}). ${errorText}`);
+      return;
+    }
+    const data = await response.json();
+    addRecipeItem({
+      ingredient: {
+        name: data.name,
+        kcal_per_100g: data.kcal_per_100g,
+        nutrients_per_100g: data.nutrients_per_100g || {},
+      },
+      grams: 100,
+    });
+    refreshSummary();
+    handleSuccess({ status: `Added USDA ingredient "${data.name}".` });
+  } catch (error) {
+    handleError(`Request failed. ${error}`);
+  }
 };
 
 const resetPlan = () => {
@@ -594,6 +937,10 @@ const resetPlan = () => {
   });
   recipeItemsContainer.innerHTML = "";
   addRecipeItem();
+  if (weightUnitEl) {
+    currentWeightUnit = weightUnitEl.value;
+    updateWeightUnitLabels(currentWeightUnit);
+  }
   refreshSummary();
   handleSuccess({ status: "Reset to defaults." });
 };
@@ -623,7 +970,37 @@ addItemButton.addEventListener("click", () => addRecipeItem());
 computeButton.addEventListener("click", () => computePlan());
 savePlanButton.addEventListener("click", () => savePlan());
 loadPlanButton.addEventListener("click", () => loadPlan());
+deletePlanButton.addEventListener("click", () => deletePlan());
 resetPlanButton.addEventListener("click", () => resetPlan());
+saveRecipeButton.addEventListener("click", () => saveRecipe());
+loadRecipeButton.addEventListener("click", () => loadRecipe());
+deleteRecipeButton.addEventListener("click", () => deleteRecipe());
+usdaFetchButton.addEventListener("click", () => fetchUsdaIngredient());
+
+if (weightUnitEl) {
+  updateWeightUnitLabels(weightUnitEl.value);
+  weightUnitEl.addEventListener("change", () => {
+    const nextUnit = weightUnitEl.value;
+    convertWeightInput(document.getElementById("dog-weight"), currentWeightUnit, nextUnit);
+    convertWeightInput(
+      document.getElementById("dog-target-weight"),
+      currentWeightUnit,
+      nextUnit
+    );
+    currentWeightUnit = nextUnit;
+    updateWeightUnitLabels(currentWeightUnit);
+  });
+}
+
+if (usdaApiKeyInput) {
+  const storedKey = localStorage.getItem(USDA_API_KEY_STORAGE);
+  if (storedKey) {
+    usdaApiKeyInput.value = storedKey;
+  }
+  usdaApiKeyInput.addEventListener("input", () => {
+    localStorage.setItem(USDA_API_KEY_STORAGE, usdaApiKeyInput.value);
+  });
+}
 
 document.querySelectorAll("input, select").forEach((input) => {
   input.addEventListener("input", () => refreshSummary());
@@ -632,3 +1009,5 @@ document.querySelectorAll("input, select").forEach((input) => {
 
 addRecipeItem();
 refreshSummary();
+refreshPlans();
+refreshRecipes();

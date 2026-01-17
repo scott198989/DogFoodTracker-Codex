@@ -29,3 +29,11 @@ CREATE TABLE IF NOT EXISTS recipe_items (
     FOREIGN KEY(recipe_id) REFERENCES recipes(id),
     FOREIGN KEY(ingredient_id) REFERENCES ingredients(id)
 );
+
+CREATE TABLE IF NOT EXISTS plans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    payload TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
