@@ -19,6 +19,24 @@ const kcalProgressEl = document.getElementById("kcal-progress");
 const savePlanButton = document.getElementById("save-plan");
 const loadPlanButton = document.getElementById("load-plan");
 const resetPlanButton = document.getElementById("reset-plan");
+const macroProteinValueEl = document.getElementById("macro-protein-value");
+const macroFatValueEl = document.getElementById("macro-fat-value");
+const macroCarbValueEl = document.getElementById("macro-carb-value");
+const macroProteinBarEl = document.getElementById("macro-protein-bar");
+const macroFatBarEl = document.getElementById("macro-fat-bar");
+const macroCarbBarEl = document.getElementById("macro-carb-bar");
+const macroRatioLabelEl = document.getElementById("macro-ratio-label");
+const mealDistributionEl = document.getElementById("meal-distribution");
+const ingredientHighlightsEl = document.getElementById("ingredient-highlights");
+const waterProgressEl = document.getElementById("water-progress");
+const waterCurrentEl = document.getElementById("water-current");
+const waterTargetEl = document.getElementById("water-target");
+const hydrationStatusEl = document.getElementById("hydration-status");
+const macroCalorieSplitEl = document.getElementById("macro-calorie-split");
+const proteinPerKgEl = document.getElementById("protein-per-kg");
+const capRatioEl = document.getElementById("cap-ratio");
+const micronutrientSignalEl = document.getElementById("micronutrient-signal");
+const diagnosticStatusEl = document.getElementById("diagnostic-status");
 
 const merFactorMap = {
   neutered_adult: 1.6,
@@ -171,6 +189,13 @@ const calculateRecipeTotals = () => {
   let proteinTotal = 0;
   let fatTotal = 0;
   let carbsTotal = 0;
+  let calciumTotal = 0;
+  let phosphorusTotal = 0;
+  let ironTotal = 0;
+  let zincTotal = 0;
+  let vitaminATotal = 0;
+  let vitaminDTotal = 0;
+  let vitaminETotal = 0;
 
   buildRecipeItems().forEach(({ ingredient, grams }) => {
     const multiplier = grams / 100;
@@ -178,6 +203,13 @@ const calculateRecipeTotals = () => {
     proteinTotal += (ingredient.nutrients_per_100g.protein_g || 0) * multiplier;
     fatTotal += (ingredient.nutrients_per_100g.fat_g || 0) * multiplier;
     carbsTotal += (ingredient.nutrients_per_100g.carbs_g || 0) * multiplier;
+    calciumTotal += (ingredient.nutrients_per_100g.calcium_mg || 0) * multiplier;
+    phosphorusTotal += (ingredient.nutrients_per_100g.phosphorus_mg || 0) * multiplier;
+    ironTotal += (ingredient.nutrients_per_100g.iron_mg || 0) * multiplier;
+    zincTotal += (ingredient.nutrients_per_100g.zinc_mg || 0) * multiplier;
+    vitaminATotal += (ingredient.nutrients_per_100g.vitamin_a_iu || 0) * multiplier;
+    vitaminDTotal += (ingredient.nutrients_per_100g.vitamin_d_iu || 0) * multiplier;
+    vitaminETotal += (ingredient.nutrients_per_100g.vitamin_e_mg || 0) * multiplier;
   });
 
   return {
@@ -185,8 +217,52 @@ const calculateRecipeTotals = () => {
     proteinTotal,
     fatTotal,
     carbsTotal,
+    calciumTotal,
+    phosphorusTotal,
+    ironTotal,
+    zincTotal,
+    vitaminATotal,
+    vitaminDTotal,
+    vitaminETotal,
   };
 };
+
+const calculateKibbleTotals = () => {
+  const grams = parseNumber(document.getElementById("kibble-grams").value);
+  const multiplier = grams / 100;
+  const kcalPer100g = parseNumber(document.getElementById("kibble-kcal").value);
+  const nutrients = readNutrients(
+    document.querySelector(".nutrients[data-prefix='kibble']")
+  );
+
+  return {
+    kcalTotal: kcalPer100g * multiplier,
+    proteinTotal: (nutrients.protein_g || 0) * multiplier,
+    fatTotal: (nutrients.fat_g || 0) * multiplier,
+    carbsTotal: (nutrients.carbs_g || 0) * multiplier,
+    calciumTotal: (nutrients.calcium_mg || 0) * multiplier,
+    phosphorusTotal: (nutrients.phosphorus_mg || 0) * multiplier,
+    ironTotal: (nutrients.iron_mg || 0) * multiplier,
+    zincTotal: (nutrients.zinc_mg || 0) * multiplier,
+    vitaminATotal: (nutrients.vitamin_a_iu || 0) * multiplier,
+    vitaminDTotal: (nutrients.vitamin_d_iu || 0) * multiplier,
+    vitaminETotal: (nutrients.vitamin_e_mg || 0) * multiplier,
+  };
+};
+
+const combineTotals = (totalsA, totalsB) => ({
+  kcalTotal: totalsA.kcalTotal + totalsB.kcalTotal,
+  proteinTotal: totalsA.proteinTotal + totalsB.proteinTotal,
+  fatTotal: totalsA.fatTotal + totalsB.fatTotal,
+  carbsTotal: totalsA.carbsTotal + totalsB.carbsTotal,
+  calciumTotal: totalsA.calciumTotal + totalsB.calciumTotal,
+  phosphorusTotal: totalsA.phosphorusTotal + totalsB.phosphorusTotal,
+  ironTotal: totalsA.ironTotal + totalsB.ironTotal,
+  zincTotal: totalsA.zincTotal + totalsB.zincTotal,
+  vitaminATotal: totalsA.vitaminATotal + totalsB.vitaminATotal,
+  vitaminDTotal: totalsA.vitaminDTotal + totalsB.vitaminDTotal,
+  vitaminETotal: totalsA.vitaminETotal + totalsB.vitaminETotal,
+});
 
 const updateMealTags = (meals) => {
   mealTagsEl.innerHTML = "";
@@ -217,18 +293,136 @@ const updateStatusPills = (merTarget, totalKcal) => {
   }
 };
 
+const updateDiagnosticPills = (messages) => {
+  diagnosticStatusEl.innerHTML = "";
+  messages.forEach(({ text, warning }) => {
+    const pill = document.createElement("span");
+    pill.className = `status-pill${warning ? " warning" : ""}`;
+    pill.textContent = text;
+    diagnosticStatusEl.appendChild(pill);
+  });
+};
+
+const updateMacroBars = (protein, fat, carbs) => {
+  const proteinCalories = protein * 4;
+  const fatCalories = fat * 9;
+  const carbCalories = carbs * 4;
+  const totalCalories = proteinCalories + fatCalories + carbCalories;
+
+  const ratio = (value) => (totalCalories > 0 ? (value / totalCalories) * 100 : 0);
+  const proteinPct = ratio(proteinCalories);
+  const fatPct = ratio(fatCalories);
+  const carbPct = ratio(carbCalories);
+
+  macroProteinValueEl.textContent = `${formatNumber(protein)}g`;
+  macroFatValueEl.textContent = `${formatNumber(fat)}g`;
+  macroCarbValueEl.textContent = `${formatNumber(carbs)}g`;
+  macroProteinBarEl.style.width = `${proteinPct}%`;
+  macroFatBarEl.style.width = `${fatPct}%`;
+  macroCarbBarEl.style.width = `${carbPct}%`;
+
+  const ratioLabel =
+    totalCalories === 0
+      ? "Awaiting macro inputs"
+      : `P${formatNumber(proteinPct)} / F${formatNumber(fatPct)} / C${formatNumber(
+          carbPct
+        )}%`;
+  macroRatioLabelEl.textContent = ratioLabel;
+  macroCalorieSplitEl.textContent =
+    totalCalories === 0
+      ? "0% / 0% / 0%"
+      : `${formatNumber(proteinPct)}% / ${formatNumber(fatPct)}% / ${formatNumber(
+          carbPct
+        )}%`;
+};
+
+const updateHydration = (weightKg) => {
+  const waterIntake = parseNumber(document.getElementById("water-ml").value);
+  const target = weightKg > 0 ? weightKg * 60 : 0;
+  const progress = target > 0 ? Math.min((waterIntake / target) * 100, 140) : 0;
+
+  waterProgressEl.style.width = `${progress}%`;
+  waterCurrentEl.textContent = `${formatNumber(waterIntake)} ml logged`;
+  waterTargetEl.textContent = `Target ${formatNumber(target)} ml`;
+  hydrationStatusEl.textContent =
+    target === 0
+      ? "Set weight to calculate target"
+      : waterIntake >= target
+        ? "Hydration on track"
+        : "Increase water intake";
+};
+
+const updateMealDistribution = (meals, totals) => {
+  mealDistributionEl.innerHTML = "";
+  if (!meals.length) {
+    mealDistributionEl.innerHTML = "<p class='muted'>Add meals to see allocation.</p>";
+    return;
+  }
+
+  const perMealKcal = totals.kcalTotal / meals.length;
+  const perMealProtein = totals.proteinTotal / meals.length;
+  const perMealFat = totals.fatTotal / meals.length;
+  const perMealCarbs = totals.carbsTotal / meals.length;
+
+  meals.forEach((meal) => {
+    const row = document.createElement("div");
+    row.className = "timeline-item";
+    row.innerHTML = `
+      <div>
+        <h4>${meal}</h4>
+        <p>${formatNumber(perMealKcal)} kcal</p>
+      </div>
+      <div class="timeline-macros">
+        <span>P ${formatNumber(perMealProtein)}g</span>
+        <span>F ${formatNumber(perMealFat)}g</span>
+        <span>C ${formatNumber(perMealCarbs)}g</span>
+      </div>
+    `;
+    mealDistributionEl.appendChild(row);
+  });
+};
+
+const updateIngredientHighlights = (recipeTotals, kibbleTotals) => {
+  ingredientHighlightsEl.innerHTML = "";
+  const items = buildRecipeItems().map(({ ingredient, grams }) => ({
+    name: ingredient.name,
+    kcal: (ingredient.kcal_per_100g || 0) * (grams / 100),
+  }));
+  items.push({
+    name: document.getElementById("kibble-name").value.trim() || "Kibble",
+    kcal: kibbleTotals.kcalTotal,
+  });
+
+  const topItems = items
+    .filter((item) => item.kcal > 0)
+    .sort((a, b) => b.kcal - a.kcal)
+    .slice(0, 3);
+
+  if (!topItems.length) {
+    ingredientHighlightsEl.innerHTML = "<li class='muted'>Add ingredients to see highlights.</li>";
+    return;
+  }
+
+  topItems.forEach((item) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<strong>${item.name}</strong><span>${formatNumber(
+      item.kcal
+    )} kcal</span>`;
+    ingredientHighlightsEl.appendChild(li);
+  });
+};
+
 const refreshSummary = () => {
   const weight = parseNumber(document.getElementById("dog-weight").value);
   const merFactorKey = document.getElementById("mer-factor").value;
   const merFactor = merFactorMap[merFactorKey] || 1.6;
   const rer = calculateRer(weight);
   const merTarget = rer * merFactor;
-  const kibbleKcal =
-    (parseNumber(document.getElementById("kibble-kcal").value) *
-      parseNumber(document.getElementById("kibble-grams").value)) /
-    100;
+  const kibbleTotals = calculateKibbleTotals();
+  const kibbleKcal = kibbleTotals.kcalTotal;
   const treatsKcal = parseNumber(document.getElementById("treats-kcal").value);
   const recipeTotals = calculateRecipeTotals();
+  const combinedTotals = combineTotals(recipeTotals, kibbleTotals);
   const totalKcal = kibbleKcal + treatsKcal + recipeTotals.kcalTotal;
   const meals = listMeals();
   const perMeal = meals.length ? totalKcal / meals.length : 0;
@@ -250,6 +444,57 @@ const refreshSummary = () => {
 
   const progress = merTarget > 0 ? Math.min((totalKcal / merTarget) * 100, 140) : 0;
   kcalProgressEl.style.width = `${progress}%`;
+
+  updateMacroBars(combinedTotals.proteinTotal, combinedTotals.fatTotal, combinedTotals.carbsTotal);
+  updateHydration(weight);
+  updateMealDistribution(meals.length ? meals : ["breakfast", "dinner"], {
+    ...combinedTotals,
+    kcalTotal: totalKcal,
+  });
+  updateIngredientHighlights(recipeTotals, kibbleTotals);
+
+  const proteinPerKg = weight > 0 ? combinedTotals.proteinTotal / weight : 0;
+  proteinPerKgEl.textContent = `${formatNumber(proteinPerKg)} g/kg`;
+
+  const capRatio =
+    combinedTotals.phosphorusTotal > 0
+      ? combinedTotals.calciumTotal / combinedTotals.phosphorusTotal
+      : 0;
+  capRatioEl.textContent =
+    combinedTotals.calciumTotal === 0 && combinedTotals.phosphorusTotal === 0
+      ? "--"
+      : formatNumber(capRatio);
+
+  const microInputs = [
+    combinedTotals.calciumTotal,
+    combinedTotals.phosphorusTotal,
+    combinedTotals.ironTotal,
+    combinedTotals.zincTotal,
+    combinedTotals.vitaminATotal,
+    combinedTotals.vitaminDTotal,
+    combinedTotals.vitaminETotal,
+  ];
+  const availableMicros = microInputs.filter((value) => value > 0).length;
+  micronutrientSignalEl.textContent =
+    availableMicros === 0
+      ? "Awaiting data"
+      : `${availableMicros} micronutrients tracked`;
+
+  const diagnosticMessages = [];
+  if (proteinPerKg > 0 && proteinPerKg < 2.5) {
+    diagnosticMessages.push({ text: "Protein density low", warning: true });
+  } else if (proteinPerKg > 0) {
+    diagnosticMessages.push({ text: "Protein density solid", warning: false });
+  }
+  if (capRatio > 0 && (capRatio < 1.1 || capRatio > 1.6)) {
+    diagnosticMessages.push({ text: "Ca:P ratio outside ideal range", warning: true });
+  } else if (capRatio > 0) {
+    diagnosticMessages.push({ text: "Ca:P ratio aligned", warning: false });
+  }
+  if (availableMicros === 0) {
+    diagnosticMessages.push({ text: "Add micronutrients for deeper analysis", warning: true });
+  }
+  updateDiagnosticPills(diagnosticMessages);
 };
 
 const collectFormState = () => {
@@ -263,6 +508,7 @@ const collectFormState = () => {
       "dog-activity": document.getElementById("dog-activity").value,
       "mer-factor": document.getElementById("mer-factor").value,
       "treats-kcal": document.getElementById("treats-kcal").value,
+      "water-ml": document.getElementById("water-ml").value,
       meals: document.getElementById("meals").value,
       "kibble-name": document.getElementById("kibble-name").value,
       "kibble-kcal": document.getElementById("kibble-kcal").value,

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dog Meal Planner</title>
+    <title>HAVOC-7B Meal Ops Console</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
@@ -52,6 +52,68 @@
         </div>
         <div class="progress">
           <div class="progress__fill" id="kcal-progress"></div>
+        </div>
+      </section>
+
+      <section class="card hud-grid">
+        <div class="hud-panel">
+          <div class="panel-header">
+            <h3>Macro Signal</h3>
+            <span class="panel-tag" id="macro-ratio-label">Balanced macro blend</span>
+          </div>
+          <div class="macro-grid">
+            <div>
+              <span>Protein</span>
+              <strong id="macro-protein-value">0g</strong>
+              <div class="bar">
+                <div class="bar-fill" id="macro-protein-bar"></div>
+              </div>
+            </div>
+            <div>
+              <span>Fat</span>
+              <strong id="macro-fat-value">0g</strong>
+              <div class="bar">
+                <div class="bar-fill" id="macro-fat-bar"></div>
+              </div>
+            </div>
+            <div>
+              <span>Carbs</span>
+              <strong id="macro-carb-value">0g</strong>
+              <div class="bar">
+                <div class="bar-fill" id="macro-carb-bar"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hud-panel">
+          <div class="panel-header">
+            <h3>Hydration + Recovery</h3>
+            <span class="panel-tag" id="hydration-status">Awaiting intake</span>
+          </div>
+          <div class="meter">
+            <div class="meter-bar">
+              <div class="meter-fill" id="water-progress"></div>
+            </div>
+            <div class="meter-labels">
+              <span id="water-current">0 ml logged</span>
+              <span id="water-target">Target 0 ml</span>
+            </div>
+          </div>
+          <p class="muted">Target based on ~60 ml/kg body weight.</p>
+        </div>
+        <div class="hud-panel">
+          <div class="panel-header">
+            <h3>Meal Timeline</h3>
+            <span class="panel-tag">Per-meal allocation</span>
+          </div>
+          <div class="timeline" id="meal-distribution"></div>
+        </div>
+        <div class="hud-panel">
+          <div class="panel-header">
+            <h3>Ingredient Highlights</h3>
+            <span class="panel-tag">Top energy contributors</span>
+          </div>
+          <ul class="hud-list" id="ingredient-highlights"></ul>
         </div>
       </section>
 
@@ -104,6 +166,10 @@
             <input type="number" step="1" min="0" id="treats-kcal" value="50" />
           </label>
           <label>
+            Water intake (ml)
+            <input type="number" step="10" min="0" id="water-ml" value="600" />
+          </label>
+          <label>
             Meals (comma-separated)
             <input type="text" id="meals" value="breakfast,dinner" />
           </label>
@@ -122,6 +188,36 @@
             <p id="meal-pacing">Add meals to see the per-meal target.</p>
           </div>
         </div>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <h2>Nutrient Diagnostics</h2>
+          <span class="panel-tag">AAFCO-aligned signals</span>
+        </div>
+        <div class="diagnostics-grid">
+          <div class="diagnostic-card">
+            <p>Macro calorie split</p>
+            <h3 id="macro-calorie-split">0% / 0% / 0%</h3>
+            <span class="metric-note">Protein / Fat / Carbs</span>
+          </div>
+          <div class="diagnostic-card">
+            <p>Protein per kg</p>
+            <h3 id="protein-per-kg">0 g/kg</h3>
+            <span class="metric-note">Daily protein density</span>
+          </div>
+          <div class="diagnostic-card">
+            <p>Calcium : Phosphorus</p>
+            <h3 id="cap-ratio">--</h3>
+            <span class="metric-note">Ideal 1.1 - 1.5</span>
+          </div>
+          <div class="diagnostic-card">
+            <p>Micronutrient coverage</p>
+            <h3 id="micronutrient-signal">Awaiting data</h3>
+            <span class="metric-note">Based on provided inputs</span>
+          </div>
+        </div>
+        <div class="status-row" id="diagnostic-status"></div>
       </section>
 
       <section class="card">
