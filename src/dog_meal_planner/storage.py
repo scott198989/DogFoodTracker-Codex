@@ -8,8 +8,19 @@ from typing import Iterator
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_DB_PATH = BASE_DIR / "data" / "dog_meal_planner.db"
-DB_PATH = Path(os.getenv("DOG_MEAL_PLANNER_DB", DEFAULT_DB_PATH))
 SCHEMA_PATH = BASE_DIR / "src" / "dog_meal_planner" / "db" / "schema.sql"
+
+
+def resolve_db_path() -> Path:
+    env_path = os.getenv("DOG_MEAL_PLANNER_DB")
+    if env_path:
+        return Path(env_path)
+    if os.getenv("VERCEL") or os.getenv("VERCEL_ENV"):
+        return Path("/tmp") / "dog_meal_planner.db"
+    return DEFAULT_DB_PATH
+
+
+DB_PATH = resolve_db_path()
 
 
 def init_db() -> None:
