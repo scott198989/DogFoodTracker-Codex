@@ -10,10 +10,50 @@
     <main class="page">
       <header class="header">
         <div>
+          <p class="eyebrow">HAVOC-7B Nutrition Console</p>
           <h1>Dog Meal Planner</h1>
-          <p>Compute meal plans against AAFCO nutrient targets with the backend API.</p>
+          <p>
+            Build precise meal plans with AAFCO-aligned nutrition targets, realtime energy
+            estimates, and structured recipe tracking.
+          </p>
+        </div>
+        <div class="header-actions">
+          <button class="ghost" id="load-plan" type="button">Load saved plan</button>
+          <button class="ghost" id="save-plan" type="button">Save plan</button>
+          <button class="ghost" id="reset-plan" type="button">Reset</button>
         </div>
       </header>
+
+      <section class="card hero">
+        <div class="hero-copy">
+          <h2>Daily Energy Snapshot</h2>
+          <p>
+            Track resting energy requirements (RER), MER factors, and meal-level pacing as you
+            build each recipe.
+          </p>
+          <div class="pill-row" id="meal-tags"></div>
+        </div>
+        <div class="hero-metrics">
+          <article class="metric-card">
+            <p>RER (kcal/day)</p>
+            <h3 id="rer-value">0</h3>
+            <span class="metric-note">70 × weight<sup>0.75</sup></span>
+          </article>
+          <article class="metric-card">
+            <p>Target MER (kcal/day)</p>
+            <h3 id="mer-value">0</h3>
+            <span class="metric-note" id="mer-factor-label">Factor 1.6</span>
+          </article>
+          <article class="metric-card">
+            <p>Food + treats (kcal)</p>
+            <h3 id="food-kcal">0</h3>
+            <span class="metric-note" id="per-meal-kcal">0 per meal</span>
+          </article>
+        </div>
+        <div class="progress">
+          <div class="progress__fill" id="kcal-progress"></div>
+        </div>
+      </section>
 
       <section class="card">
         <h2>Dog Profile</h2>
@@ -68,6 +108,20 @@
             <input type="text" id="meals" value="breakfast,dinner" />
           </label>
         </div>
+        <div class="tip-row">
+          <div>
+            <h3>Insights</h3>
+            <ul>
+              <li>Use target weight to guide gradual weight changes.</li>
+              <li>Match MER factors to current activity and growth stage.</li>
+              <li>Include treats in total energy to avoid overfeeding.</li>
+            </ul>
+          </div>
+          <div class="callout">
+            <p class="callout-title">Meal pacing</p>
+            <p id="meal-pacing">Add meals to see the per-meal target.</p>
+          </div>
+        </div>
       </section>
 
       <section class="card">
@@ -109,6 +163,30 @@
           <button class="ghost" id="add-item" type="button">Add ingredient</button>
         </div>
         <div id="recipe-items" class="stack"></div>
+        <div class="summary-row">
+          <div>
+            <h3>Recipe totals</h3>
+            <p class="muted">Calculated from recipe ingredient inputs.</p>
+          </div>
+          <div class="summary-grid">
+            <div>
+              <span>Recipe kcal</span>
+              <strong id="recipe-kcal">0</strong>
+            </div>
+            <div>
+              <span>Protein g</span>
+              <strong id="recipe-protein">0</strong>
+            </div>
+            <div>
+              <span>Fat g</span>
+              <strong id="recipe-fat">0</strong>
+            </div>
+            <div>
+              <span>Carbs g</span>
+              <strong id="recipe-carbs">0</strong>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="card">
@@ -116,6 +194,7 @@
           <h2>Plan Results</h2>
           <button id="compute" type="button">Compute plan</button>
         </div>
+        <div class="status-row" id="status-row"></div>
         <pre id="result" aria-live="polite">Fill the form and click “Compute plan”.</pre>
       </section>
     </main>
